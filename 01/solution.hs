@@ -3,22 +3,6 @@
 module Main where
 
 
-measur1 :: [Int]
-measur1 =
-    [
-        199,
-        200,
-        208,
-        210,
-        200,
-        207,
-        240,
-        269,
-        260,
-        263
-    ]
-
-
 countInc :: [Int] -> Int
 countInc (x : xs) =
     length $ filter (== True) $ zipWith (\c n -> n > c) (x : xs) xs
@@ -38,6 +22,22 @@ main = do
     let inc3 = countInc3 input
     print inc
     print inc3
+
+
+measur1 :: [Int]
+measur1 =
+    [
+        199,
+        200,
+        208,
+        210,
+        200,
+        207,
+        240,
+        269,
+        260,
+        263
+    ]
 
 
 measur2 :: [Int]
