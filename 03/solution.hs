@@ -88,14 +88,16 @@ main = do
     print $ show c ++ " " ++ show d
     print $ c * d
 
-    let ox1 = binToDec $ fst $ evalRWS (findRating (>)) ls 0
-        co1 = binToDec $ fst $ evalRWS (findRating (<=)) ls 0
+    let get cmp ll = binToDec $ fst $ evalRWS (findRating cmp) ll 0
+
+    let ox1 = get (>) ls
+        co1 = get (<=) ls
 
     print (ox1, co1)
     print $ ox1 * co1
 
-    let ox2 = binToDec $ fst $ evalRWS (findRating (>)) ls2 0
-        co2 = binToDec $ fst $ evalRWS (findRating (<=)) ls2 0
+    let ox2 = get (>) ls2
+        co2 = get (<=) ls2
 
     print (ox2, co2)
     print $ ox2 * co2
