@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+day="$1"
+
+mkdir "$day"
+cd "$day"
+
+ln -s ../AoCUtils.hs AoCUtils.hs
+
+echo "#!/usr/bin/env runghc
+
+module Main where
+
+import AoCUtils
+
+
+main :: IO ()
+main = do
+    putStrLn \"day $day\"
+
+" > solution.hs
+
+touch "input1.txt" "input2.txt"
+
+cd ..
