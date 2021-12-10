@@ -14,12 +14,29 @@ module Main where
 import AoCUtils
 
 
+fstHalf :: FilePath -> IO ()
+fstHalf fileIn = do
+    ls <- getLines fileIn
+    pure ()
+
+
+sndHalf :: FilePath -> IO ()
+sndHalf fileIn = do
+    ls <- getLines fileIn
+    pure ()
+
+
 main :: IO ()
 main = do
     putStrLn \"day $day\"
+    fstHalf \"input1.txt\"
+    fstHalf \"input2.txt\"
+    sndHalf \"input1.txt\"
+    sndHalf \"input2.txt\"
 
 " > solution.hs
 
 touch "input1.txt" "input2.txt"
 
 cd ..
+
