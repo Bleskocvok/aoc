@@ -11,7 +11,7 @@ echo "#!/usr/bin/env runghc
 
 module Main where
 
-import AoCUtils
+import AoCUtils ( getLines )
 
 
 fstHalf :: FilePath -> IO ()
