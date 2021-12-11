@@ -58,35 +58,6 @@ inverse c
         cl = findClose c
 
 
--- lineReader :: Maybe Char -> State String (Maybe Int)
--- lineReader ch = do
---     xs <- get
---     if null xs then
---         pure Nothing
---     else do
---         modify $ drop 1
---         let h = head xs
---         if opening h then do
---             r <- lineReader $ Just h
---             rest <- lineReader Nothing
---             pure $ msum [ r, rest ]
---         else if closing h then do
---             rest <- lineReader Nothing
---             pure $ msum [ mismatch ch h, rest ]
---         else do
---             pure $ Just $ score h
---     where
---         mismatch Nothing cl = Just $ score cl
---         mismatch (Just op) cl
---             | cl == inverse op = Nothing
---             | otherwise = Just $ score cl
-    
-
-
--- checkLine :: String -> Maybe Int
--- checkLine = evalState (lineReader Nothing)
-
-
 missing :: [Char] -> String -> [Char]
 missing acc [] = inverse `map` acc
 missing acc (h : xs)
