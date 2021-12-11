@@ -3,11 +3,8 @@
 module Main where
 
 import AoCUtils ( getLines )
-import Data.Array
-import qualified Data.Set as S
-import Control.Monad.State
-import Control.Monad
-import Data.List
+import Data.Array ( Array, elems, (!), (//), bounds, indices, listArray )
+import Control.Monad.State ( MonadState(get), foldM, modify, runState, State )
 
 
 type Grid = Array (Int, Int) Int
