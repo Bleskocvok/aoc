@@ -3,9 +3,9 @@
 module Main where
 
 import AoCUtils ( getLines )
-import Data.List
 import qualified Data.Map as M
-import Control.Monad.State
+import Data.List ( foldl', group, sort )
+import Control.Monad.State ( foldM_, forM_, modify', execState, State )
 
 
 -- parsing
@@ -97,37 +97,6 @@ getPairs' _ = []
 
 mkPairs :: String -> Pairs
 mkPairs = M.fromList . getPairs'
-
-
--- getPairs :: String -> [(Char, Char)]
--- getPairs (x : y : xs) = (x, y) : getPairs xs
--- getPairs _ = []
-
-
--- mkPairs :: String -> Pairs
--- mkPairs = foldl' (\m x -> M.insertWith add x (1, Mid) m) M.empty . getPairs
-
-
--- add :: Element -> Element -> Element
--- add (i, p) (j, p') = if p == p'
---     then (i + j, p)
---     else error "add: sides not matching"
-
-
--- step' :: [Rule] -> Pairs -> Pairs
--- step' rules pairs = foldr apply [] rules
---     where
---         apply rul acc = case found of
---             Nothing -> acc
---             Just x -> addToList
---             where
---                 found = M.lookup (fst rul) pairs
---         addToList (a, b) i lst
---             | (a, b) `elem` lst = map (madd (a, b), i) lst
---             | otherwise = ((a, b), i)
---         madd x@(_, i') (a, b) i
---             | fst x == (a, b) = ((a, b), i' + i)
---             | otherwise = x
 
 
 step' :: [Rule] -> Pairs -> State Pairs ()
