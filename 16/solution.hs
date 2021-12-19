@@ -154,14 +154,15 @@ fstHalf fileIn =
 evalPacket :: Packet -> Int
 evalPacket (Packet _ tid dat) =
     let
-        oper 0 = sum
-        oper 1 = product
-        oper 2 = minimum
-        oper 3 = maximum
-        oper 5 = fromEnum . onTwo (>)
-        oper 6 = fromEnum . onTwo (<)
-        oper 7 = fromEnum . onTwo (==)
-        oper _ = error "evalPacket: invalid operator"
+        oper i = case i of
+            0 -> sum
+            1 -> product
+            2 -> minimum
+            3 -> maximum
+            5 -> fromEnum . onTwo (>)
+            6 -> fromEnum . onTwo (<)
+            7 -> fromEnum . onTwo (==)
+            _ -> error "evalPacket: invalid operator"
         onTwo op lst = a `op` b
             where [a, b] = take 2 lst
     in
