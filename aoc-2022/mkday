@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+day="$1"
+
+mkdir "$day"
+cd "$day"
+
+
+echo """#!/usr/bin/env -S runhaskell -i../
+
+module Main where
+
+
+import AoCUtils ( getLines )
+
+
+fstHalf :: FilePath -> IO ()
+fstHalf fileIn = do
+    ls <- getLines fileIn
+    pure ()
+
+
+sndHalf :: FilePath -> IO ()
+sndHalf fileIn = do
+    ls <- getLines fileIn
+    pure ()
+
+
+main :: IO ()
+main = do
+    putStrLn \"day $day\"
+    putStrLn \"\\nfirst\"
+    fstHalf \"input1.txt\"
+    fstHalf \"input2.txt\"
+    putStrLn \"\\nsecond\"
+    sndHalf \"input1.txt\"
+    sndHalf \"input2.txt\"
+
+""" > solution.hs
+
+touch "input1.txt" "input2.txt"
+
+cd ..
+
