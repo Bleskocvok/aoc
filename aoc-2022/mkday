@@ -29,9 +29,11 @@ sndHalf fileIn = do
 main :: IO ()
 main = do
     putStrLn \"day $day\"
+
     putStrLn \"\\nfirst\"
     fstHalf \"input1.txt\"
     fstHalf \"input2.txt\"
+
     putStrLn \"\\nsecond\"
     sndHalf \"input1.txt\"
     sndHalf \"input2.txt\"
