@@ -89,8 +89,7 @@ sndHalf = simulate 10
 
 
 main :: IO ()
-main = do
-    putStrLn "day 09" >>  putStrLn "\nfirst"  >> fstHalf "input1.txt"
-                      >>  putStrLn "\nsecond" >> sndHalf "input1.txt"
+main = putStrLn "day 09" >>  putStrLn "\nfirst"  >> fstHalf "input1.txt"
+                         >>  putStrLn "\nsecond" >> sndHalf "input1.txt"
 
 
