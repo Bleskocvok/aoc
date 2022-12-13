@@ -5,12 +5,9 @@ module Main where
 
 import AoCUtils ( getLines )
 
-import Data.Array
-import Data.List
+import Control.Monad ( forM_ )
+import Data.Array ( (!), listArray, Array )
 
-import Control.Monad
-
-import Debug.Trace
 
 data Instruction = AddX Int | NoOp deriving ( Eq, Show )
 type Cycles = Array Int Int
@@ -35,11 +32,30 @@ getImportantCycles :: Cycles -> [Int] -> [Int]
 getImportantCycles cycles = foldr ((:) . (cycles !) . (+ (-1))) []
 
 
+visible :: Int -> Int -> Bool
+visible row sprite = abs (row - sprite) <= 1
+
+
+draw :: Cycles -> IO ()
+draw cyc = forM_ [ [ c | x <- [0..39], let c = pixel x (sprite x y)
+                   ] | y <- [0..5]
+                 ] putStrLn
+    where
+        rows = 6
+        cols = 40
+        sprite x y = if x == 0 && y == 0 then 1 else (cyc ! (y * cols + x))
+        pixel x = (".#" !!) . fromEnum . visible x
+
+
+getCycles :: FilePath -> IO Cycles
+getCycles f = eval . (readInst `map`) <$> getLines f
+
+
+
 fstHalf :: FilePath -> IO ()
 fstHalf fileIn = do
-    inst <- (readInst `map`) <$> getLines fileIn
-    let cycles = eval inst
-        times = [20, 60 .. 220]
+    cycles <- getCycles fileIn
+    let times = [20, 60 .. 220]
         signal = getImportantCycles cycles times
         xs = zipWith (*) times signal
         result = sum xs
@@ -47,13 +63,13 @@ fstHalf fileIn = do
 
 
 sndHalf :: FilePath -> IO ()
-sndHalf fileIn = do
-    ls <- getLines fileIn
-    pure ()
+sndHalf fileIn = getCycles fileIn >>= draw
 
 
 main :: IO ()
-main = putStrLn "day 10" >> putStrLn "\nfirst"  >> fstHalf "input1.txt"
-                                                >> fstHalf "input2.txt"
-                         >> putStrLn "\nsecond" >> sndHalf "input1.txt"
-                                                >> sndHalf "input2.txt"
+main = putStrLn "day 10" >> putStrLn "\nfirst"  >> fstHalf "example.txt"
+                                                >> putStrLn ""
+                                                >> fstHalf "input1.txt"
+                         >> putStrLn "\nsecond" >> sndHalf "example.txt"
+                                                >> putStrLn ""
+                                                >> sndHalf "input1.txt"
