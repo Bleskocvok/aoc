@@ -5,7 +5,7 @@ module Main where
 
 import AoCUtils ( getLines )
 
-import Data.Array
+import Data.Array ( (!), (//), bounds, indices, listArray, Array )
 
 
 type Map = Array (Int, Int) Int
@@ -54,7 +54,7 @@ viewScore m (x, y) = foldr (*) 1 [visibleLine (0, 1), visibleLine (0, -1),
 
 
 calculateMaxima :: Map -> (Map, Map, Map, Map)
-calculateMaxima m = (a, b, c, d)
+calculateMaxima m = (m // a, m // b, m // c, m // d)
     where
         ((lx, ly), (hx, hy)) = bounds m
         (_, a) = foldOver ( 1,  0) [ (lx,  y) | y <- [ly..hy] ]
@@ -63,11 +63,12 @@ calculateMaxima m = (a, b, c, d)
         (_, d) = foldOver ( 0, -1) [ ( x, hy) | x <- [lx..hx] ]
         foldOver dir = foldr
                 (\xy (_, acc) -> (foldTreeMap m xy dir (-1, acc) foldMaximum))
-                (0, m)
+                (0, [])
 
 
-foldMaximum :: (Int, Int) -> Int -> (Int, Map) -> (Int, Map)
-foldMaximum (x, y) h (maxH, m) = (max h maxH, m // [((x, y), maxH)])
+foldMaximum :: (Int, Int) -> Int -> (Int, [((Int, Int), Int)])
+                                 -> (Int, [((Int, Int), Int)])
+foldMaximum (x, y) h (maxH, acc) = (max h maxH, ((x, y), maxH) : acc)
 
 
 isVisible :: (Map, Map, Map, Map) -> Map -> (Int, Int) -> Bool
@@ -75,9 +76,9 @@ isVisible (a, b, c, d) m ix = m ! ix > minimum [a ! ix, b ! ix, c ! ix, d ! ix]
 
 
 transform :: Map -> (Map, Map, Map, Map) -> Map
-transform m hm = foldr (\i acc -> acc // [ (i, -1 + fromEnum (isVisible hm m i)) ])
-                       m
-                       (indices m)
+transform m hm = m // foldr (\i -> ((i, -1 + fromEnum (isVisible hm m i)) :))
+                            []
+                            (indices m)
 
 
 -- UTILS
