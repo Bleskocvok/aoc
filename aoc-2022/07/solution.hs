@@ -5,9 +5,9 @@ module Main where
 
 import AoCUtils ( getLines, splitOn )
 
-import Control.Monad
-import Data.Functor
-import Control.Monad.State
+import Control.Monad ( liftM2, when, forM_ )
+import Data.Functor ( ($>) )
+import Control.Monad.State ( MonadState(get), gets, modify, evalState, State )
 import qualified Data.Map.Strict as M
 
 
@@ -33,32 +33,43 @@ tokenize = map readCmd
 
 parseDir :: State [Cmd] FileTree
 parseDir = do
+
     -- first two lines should be cd and ls
     pre <- gets $ take 2
-    let (cd, ls) = (pre !! 0, pre !! 1)
-    when (not $ isCd cd) (error $ "expected cd: " ++ show cd)
-    when (not $ isLs ls) (error $ "expected ls: " ++ show ls)
-    modify $ drop 2
-    -- eat directory contents
-    ents <- gets $ (toEntry `map`) . takeWhile isContent
-    modify $ drop $ length ents
-    let ment = M.fromList ents
-    -- continue
-    cmds <- get
-    case cmds of
-        []            -> pure $ Dir ment
-        (Cd ".." : _) -> modify tail $> Dir ment
-        (Cd chld : _) -> do dir <- parseDir
-                            let ment' = M.adjust (const dir) chld ment
-                            cmds' <- get
-                            case cmds' of
-                                []            -> pure $ Dir ment'
-                                (Cd ".." : _) -> modify tail $> Dir ment'
-                                _ -> addToDir ment' <$> parseDir
-        (e : _) -> error $ "parseDir: unexpected " ++ show e
+    case pre of
+        []  -> pure $ Dir M.empty
+        [_] -> pure $ Dir M.empty
+        [cd, ls] -> do
+            when (not $ isCd cd) (error $ "expected cd: " ++ show cd)
+            when (not $ isLs ls) (error $ "expected ls: " ++ show ls)
+            modify $ drop 2
+
+            -- eat directory contents
+            ents <- gets $ (toEntry `map`) . takeWhile isContent
+            modify $ drop $ length ents
+            let files = M.fromList ents
+
+            subdirs <- parseCds
+
+            let replace (k, d) f = M.adjust (const d) k f
+                files' = foldr replace files subdirs
+
+            pure $ Dir files'
+
     where
+        parseCds :: State [Cmd] [(String, FileTree)]
+        parseCds = do
+            cmds <- get
+            case cmds of
+                []            -> pure []
+                (Cd ".." : _) -> modify tail $> []
+                (Cd chld : _) -> liftM2 ((:) . ((,) chld)) parseDir parseCds
+        -- “Cds nuts” hehe
+
+
         isCd x = case x of (Cd _) -> True; _ -> False
         isLs x = case x of Ls     -> True; _ -> False
+
         isContent x = case x of (EchoDir  _)   -> True
                                 (EchoFile _ _) -> True
                                 _ -> False
@@ -71,20 +82,59 @@ parseDir = do
         addToDir _ _ = error "joinDirs: invalid arguments"
 
 
+sillySumLargeDirs :: Int -> FileTree -> Int
+sillySumLargeDirs _ (File i) = 0
+sillySumLargeDirs thres dir@(Dir sub) =
+    foldr ((+) . sillySumLargeDirs thres) 0 sub
+    + let total = size dir in if total <= thres then total else 0
+
+
+sumLargeDirs :: Int -> FileTree -> Int
+sumLargeDirs _ (File i) = 0
+sumLargeDirs thres dir@(Dir sub) = let total = size dir in
+    if total <= thres
+    then total
+    else foldr ((+) . sumLargeDirs thres) 0 sub
+
+
+getLargeDirs :: Int -> FileTree -> Int
+getLargeDirs thr (File i) = maxBound
+getLargeDirs thr dir@(Dir sub) =
+    let
+        bigger = filter ((thr <=) . size) (M.elems sub)
+        cur = minimum $ (maxBound :) . map size $ bigger
+    in
+        foldr (min . getLargeDirs thr) cur bigger
+
+
+foldDirSizes :: (Int -> b -> b) -> b -> FileTree -> b
+foldDirSizes _ b (File _) = b
+foldDirSizes f b (Dir sub) = foldr (flip (foldDirSizes f))
+                                   (foldr f b (map size dirs))
+                                   dirs
+    where
+        dirs = filter isDir $ M.elems sub
+        isDir x = case x of (Dir _) -> True; _ -> False
+
+
+size :: FileTree -> Int
+size (Dir files) = foldr ((+) . size) 0 files
+size (File s) = s
+
+
+perform :: Show a => (FileTree -> a) -> FilePath -> IO ()
+perform f fileIn = getLines fileIn >>= print . f . evalState parseDir . tokenize
+
+
 fstHalf :: FilePath -> IO ()
-fstHalf fileIn = do
-    ls <- getLines fileIn
-    let cmds = tokenize ls
-        tree = evalState parseDir cmds
-    forM_ cmds print
-    print tree
-    pure ()
+fstHalf = perform (sillySumLargeDirs 100000)
 
 
 sndHalf :: FilePath -> IO ()
-sndHalf fileIn = do
-    ls <- getLines fileIn
-    pure ()
+sndHalf = perform freeSpace
+    where
+        freeSpace t = let needed = (30000000 - (70000000 - size t))
+                      in minimum $ filter (needed <=) $ foldDirSizes (:) [] t
 
 
 main :: IO ()
