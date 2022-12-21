@@ -56,6 +56,7 @@ data TreeExpr = TreeX | TreeVal Int | TreeOp Operator TreeExpr TreeExpr
               deriving ( Eq, Show )
 
 
+-- same complexity, but it's fine for given input
 makeTree :: M.Map String Expr -> String -> TreeExpr
 makeTree ms name =
     case ms M.!? name of
