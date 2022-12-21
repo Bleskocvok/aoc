@@ -24,13 +24,17 @@ getCSVNums file = getLines file <&> map toInt . splitOn ',' . head
         toInt = read
 
 
-splitOn :: Eq a => a -> [a] -> [[a]]
-splitOn = splitAcc []
+splitBy :: (a -> Bool) -> [a] -> [[a]]
+splitBy = splitAcc []
     where
         splitAcc acc _ [] = [reverse acc]
-        splitAcc acc c (x : xs)
-            | x == c    = (reverse acc) : splitAcc [] c xs
-            | otherwise = splitAcc (x : acc) c xs
+        splitAcc acc f (x : xs)
+            | f x    = (reverse acc) : splitAcc [] f xs
+            | otherwise = splitAcc (x : acc) f xs
+
+
+splitOn :: Eq a => a -> [a] -> [[a]]
+splitOn c = splitBy (c ==)
 
 
 eats :: (s -> a) -> State [s] a
