@@ -10,7 +10,7 @@ import Data.Bifunctor ( Bifunctor(bimap) )
 import Data.Semigroup ( Max( Max, getMax ), Min( Min, getMin ) )
 import Data.List ( find, findIndex, group, sort )
 import Data.Bool ( bool )
-import Control.Monad ( liftM )
+import Control.Monad ( liftM, (<$!>) )
 import Data.Functor ( (<&>) )
 
 
@@ -34,8 +34,8 @@ makeRect es = listArray ((lx, ly), (hx, hy)) (repeat False)
               // zip es (repeat True)
     where
         get f g = bimap f f . foldMap (bimap g g)
-        (lx, ly) = get getMin Min es
-        (hx, hy) = get getMax Max es
+        (!lx, !ly) = get getMin Min es
+        (!hx, !hy) = get getMax Max es
 
 
 showRect :: Rectangle -> String
@@ -101,9 +101,9 @@ fullRound es dirs = (runRound es dirs, rotate dirs)
         rotate [] = error "rotate: empty list"
 
 
-konverges :: Int -> Elves -> [Direction]-> Int
-konverges i es dirs | es == next = i
-                    | otherwise = konverges (i + 1) next nextDirs
+converges :: Int -> Elves -> [Direction]-> Int
+converges i es dirs | es == next = i
+                    | otherwise = converges (i + 1) next nextDirs
     where
         (!next, !nextDirs) = fullRound es dirs
 
@@ -127,13 +127,12 @@ fstHalf f = do
 
 sndHalf :: FilePath -> IO ()
 sndHalf f = (parseElves <$!> getLines f)
-    -- >>= (print . liftM (2+) . findIndex ((2 <=) . length) . group . getStates 1000)
-    >>= (print . flip (konverges 2) [ (0, -1), (0, 1), (-1, 0), (1, 0) ] )
+    >>= (print . flip (converges 2) [ (0, -1), (0, 1), (-1, 0), (1, 0) ] )
 
 
 main :: IO ()
 main = putStrLn "day 23" >> putStrLn "\nfirst"  >> fstHalf "example.txt"
                                                 >> fstHalf "input1.txt"
                          >> putStrLn "\nsecond" >> sndHalf "example.txt"
-                                                >> sndHalf "input1.txt"
+                                                >> sndHalf "long.txt"
 
