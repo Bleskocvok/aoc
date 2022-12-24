@@ -89,11 +89,23 @@ runRound es dirs = zipWith (\m o -> bool m o $ occupied blocked m) moves origs
 
 foldRounds :: (Elves -> a -> a) -> a -> Int -> Elves -> [Direction] -> (Elves,a)
 foldRounds _ acc 0 es _    = (es, acc)
-foldRounds f acc i es dirs = foldRounds f (f next acc) (i-1) next (rotate dirs)
+foldRounds f acc i es dirs = foldRounds f (f next acc) (i-1) next nextDirs
     where
-        next = runRound es dirs
+        (next, nextDirs) = fullRound es dirs
+
+
+fullRound :: Elves -> [Direction] -> (Elves, [Direction])
+fullRound es dirs = (runRound es dirs, rotate dirs)
+    where
         rotate (x : xs) = xs ++ [x]
         rotate [] = error "rotate: empty list"
+
+
+konverges :: Int -> Elves -> [Direction]-> Int
+konverges i es dirs | es == next = i
+                    | otherwise = konverges (i + 1) next nextDirs
+    where
+        (!next, !nextDirs) = fullRound es dirs
 
 
 getStates :: Int -> Elves -> [Elves]
@@ -114,8 +126,9 @@ fstHalf f = do
 
 
 sndHalf :: FilePath -> IO ()
-sndHalf f = (parseElves <$> getLines f)
-    >>= (print . liftM (2+) . findIndex ((2 <=) . length) . group . getStates 1000)
+sndHalf f = (parseElves <$!> getLines f)
+    -- >>= (print . liftM (2+) . findIndex ((2 <=) . length) . group . getStates 1000)
+    >>= (print . flip (konverges 2) [ (0, -1), (0, 1), (-1, 0), (1, 0) ] )
 
 
 main :: IO ()
