@@ -108,9 +108,12 @@ converges i es dirs | es == next = i
         (!next, !nextDirs) = fullRound es dirs
 
 
+startDirs :: [Direction]
+startDirs = [ (0, -1), (0, 1), (-1, 0), (1, 0) ]
+
+
 getStates :: Int -> Elves -> [Elves]
-getStates i es = let dirs = [ (0, -1), (0, 1), (-1, 0), (1, 0) ] 
-                 in  reverse $ snd $ foldRounds (:) [] i es dirs
+getStates i es = reverse $ snd $ foldRounds (:) [] i es startDirs
 
 
 fstHalf :: FilePath -> IO ()
@@ -127,12 +130,12 @@ fstHalf f = do
 
 sndHalf :: FilePath -> IO ()
 sndHalf f = (parseElves <$!> getLines f)
-    >>= (print . flip (converges 2) [ (0, -1), (0, 1), (-1, 0), (1, 0) ] )
+    >>= (print . flip (converges 1) startDirs)
 
 
 main :: IO ()
 main = putStrLn "day 23" >> putStrLn "\nfirst"  >> fstHalf "example.txt"
                                                 >> fstHalf "input1.txt"
                          >> putStrLn "\nsecond" >> sndHalf "example.txt"
-                                                >> sndHalf "long.txt"
+                                                >> sndHalf "input1.txt"
 
