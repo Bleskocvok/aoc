@@ -5,15 +5,13 @@ module Main where
 
 import AoCUtils ( getLines )
 
-import Data.Array
-import Data.List
-import Data.Maybe
-import Data.Bool
-import Data.Bifunctor
-import Control.Monad
+import Data.Array ( Array, (!), (//), accum, bounds, indices, listArray )
+import Data.List ( elemIndex, transpose )
+import Data.Maybe ( fromJust )
+import Data.Bifunctor ( Bifunctor( first ) )
 import qualified Data.Set as S
 
-import Debug.Trace
+import Debug.Trace ( trace )
 
 
 data Blizzard = X | N | S | W | E  -- blocked, up, down, left, right
@@ -109,8 +107,8 @@ next bs = accum oneNext bs zixs
                 (_, (hx, hy)) = bounds bs
 
 
-bfs :: Int -> Map -> Visited -> Int
-bfs i m vis | visited ! dest m = i - 1
+bfs :: Int -> Map -> Visited -> (Int, Map)
+bfs i m vis | visited ! dest m = (i - 1, m)
             | otherwise = bfs (i + 1) (next `apply` m) nextVis
     where
         visited = vis
@@ -129,32 +127,29 @@ bfs i m vis | visited ! dest m = i - 1
                                || isVisited (x, y - 1))
 
 
-runBfs :: Map -> Int
+runBfs :: Map -> (Int, Map)
 runBfs m = bfs 0 m $ (False <$ blizzards m) // [(from m, True)]
 
 
 fstHalf :: FilePath -> IO ()
 fstHalf fileIn = do
     m <- parseMap <$> getLines fileIn
-    let result = runBfs m
+    let (_, result) = runBfs m
     print m
     print result
 
 
 sndHalf :: FilePath -> IO ()
 sndHalf fileIn = do
-    m <- parseMap <$> getLines fileIn
-    let there = runBfs m
-        m'    = switch . nexts (there + 1) $ m
-        back  = runBfs m'
-        m''   = switch . nexts (back + 1)  $ m'
-        thereAgain = runBfs m''
+    m1 <- parseMap <$> getLines fileIn
+    let (there,     m2) =        runBfs $ m1
+        (back,      m3) = wait . runBfs $ switch m2
+        (thereAgain, _) = wait . runBfs $ switch m3
     print [there, back, thereAgain]
     print $ there + back + thereAgain
-    pure ()
     where
         switch (Map bs fr to) = Map bs to fr
-        nexts n = last . take n . iterate (apply next)
+        wait = first (+1)
 
 
 main :: IO ()
