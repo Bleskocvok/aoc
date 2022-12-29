@@ -10,33 +10,30 @@ import Data.List
 import Data.Maybe
 import Data.Bool
 import Data.Bifunctor
-
+import Control.Monad
 import qualified Data.Set as S
 
+import Debug.Trace
 
-data Blizzard = N | S | W | E  -- up, down, left, right
+
+data Blizzard = X | N | S | W | E  -- blocked, up, down, left, right
               deriving ( Eq )
 
 type Blizzards = Array (Int, Int) [Blizzard]
 
 data Map = Map { blizzards :: Blizzards
-               , from :: Int
-               , dest :: Int }
+               , from :: (Int, Int)
+               , dest :: (Int, Int) }
 
 type Visited = Array (Int, Int) Bool
 
 
 instance Show Blizzard where
-    show b = case b of N -> "^"; S -> "v"; W -> "<"; E -> ">"
+    show b = case b of X -> "#"; N -> "^"; S -> "v"; W -> "<"; E -> ">"
 
 
 instance Show Map where
-    show (Map bs beg end) = border beg ++ "\n"
-                            ++ showMap bs
-                            ++ border end ++ "\n"
-        where
-            border i = [ bool '#' '.' (x == i) | x <- [0 .. maxX] ]
-            maxX = fst . snd . bounds $ bs
+    show = showMap . blizzards
 
 
 showMap :: Blizzards -> String
@@ -50,21 +47,29 @@ showMap m = foldl showLine [] [ly..hy]
         showElem xs  = head . show . length $ xs
 
 
+showArray2d :: Show a => Array (Int, Int) a -> String
+showArray2d a = foldl showLine [] [ly..hy]
+    where
+        ((lx, ly), (hx, hy)) = bounds a
+        showLine str y = str ++ map (chrs !) (zip [lx..hx] (repeat y)) ++ "\n"
+        chrs = head . show <$> a
+
+
 parseMap :: [String] -> Map
 parseMap lines = case lines of
-    []       -> error "parseMap: empty input"
-    (l : ls) ->
+    [] -> error "parseMap: empty input"
+    ls ->
         let
-            start = findDot l
-            end   = findDot . last $ ls
-            xs = map (parseLine) . init $ ls
+            start = (findDot . head $ ls, 0)
+            end   = (findDot . last $ ls, snd $ getBounds xs)
+            xs = map (map parseOne) ls
             blizz = listArray ((0, 0), getBounds xs) . concat . transpose $ xs
         in
             Map blizz start end
     where
-        findDot = ((-1) +) . fromJust . elemIndex '.'
-        parseLine = map parseOne . init . tail
+        findDot = fromJust . elemIndex '.'
         parseOne c = case c of '.' -> []
+                               '#' -> [X]
                                '^' -> [N]
                                'v' -> [S]
                                '<' -> [W]
@@ -73,20 +78,28 @@ parseMap lines = case lines of
 
 
 apply :: (Blizzards -> Blizzards) -> Map -> Map
-apply f (Map blizz a b) = (Map (f blizz) a b)
+apply f (Map blizz a b) = Map (f blizz) a b
 
 
 next :: Blizzards -> Blizzards
-next bs = accum oneNext bs (zip ixs ixs)
+next bs = accum oneNext bs zixs
     where
         ixs = indices bs
+        zixs = zip ixs ixs
 
-        oneNext _ (x, y) = concat [ get (x, y + 1) N
-                                  , get (x, y - 1) S
-                                  , get (x + 1, y) W
-                                  , get (x - 1, y) E ]
+        oneNext _ ix | bs ! ix == [X] = [X]
+                     | otherwise = concat [ getDir ix ( 0,  1) N
+                                          , getDir ix ( 0, -1) S
+                                          , getDir ix ( 1,  0) W
+                                          , getDir ix (-1,  0) E ]
+
+        get ix b = filter (b ==) $ bs ! wrapIdx ix
+
+        getDir (x, y) (dx, dy) b
+            | bs ! moved == [X] = getDir moved (dx, dy) b
+            | otherwise         = get moved b
             where
-                get ix b = filter (b ==) $ bs ! (wrapIdx ix)
+                moved = wrapIdx (x + dx, y + dy)
 
         wrapIdx (x, y) = (wrap' 0 hx x, wrap' 0 hy y)
             where
@@ -97,9 +110,12 @@ next bs = accum oneNext bs (zip ixs ixs)
 
 
 bfs :: Int -> Map -> Visited -> Int
-bfs i m vis | vis ! (dest m, hy) = i
+bfs i m vis | visited ! dest m = i - 1
             | otherwise = bfs (i + 1) (next `apply` m) nextVis
     where
+        visited = vis
+        -- visited = trace (showArray2d $ fromEnum <$> vis) vis
+
         (_, (hx, hy)) = bounds . blizzards $ m
         isVisited (x, y) | x < 0  || y < 0  = False
                          | x > hx || y > hy = False
@@ -114,7 +130,7 @@ bfs i m vis | vis ! (dest m, hy) = i
 
 
 runBfs :: Map -> Int
-runBfs m = bfs 0 m ((const False <$> blizzards m) // [((from m, 0), True)])
+runBfs m = bfs 0 m $ (False <$ blizzards m) // [(from m, True)]
 
 
 fstHalf :: FilePath -> IO ()
@@ -122,16 +138,23 @@ fstHalf fileIn = do
     m <- parseMap <$> getLines fileIn
     let result = runBfs m
     print m
-    print $ next `apply` m
-    print $ (next . next) `apply` m
     print result
-    pure ()
 
 
 sndHalf :: FilePath -> IO ()
 sndHalf fileIn = do
-    ls <- getLines fileIn
+    m <- parseMap <$> getLines fileIn
+    let there = runBfs m
+        m'    = switch . nexts (there + 1) $ m
+        back  = runBfs m'
+        m''   = switch . nexts (back + 1)  $ m'
+        thereAgain = runBfs m''
+    print [there, back, thereAgain]
+    print $ there + back + thereAgain
     pure ()
+    where
+        switch (Map bs fr to) = Map bs to fr
+        nexts n = last . take n . iterate (apply next)
 
 
 main :: IO ()
